@@ -1,0 +1,24 @@
+[package]
+name = "dspace"
+version = "0.1.0"
+edition = "2021"
+description = "Simplified disk and directory space tool for Linux"
+license = "MIT"
+readme = "README.md"
+
+[[bin]]
+name = "dspace"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+owo-colors = "4.0"
+rustix = { version = "0.38", features = ["fs", "std"] }
+rayon = "1.8"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true
