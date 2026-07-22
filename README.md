@@ -12,7 +12,7 @@ dspace ~ high --depth 2 # what's big under home?
 Requires a recent Rust toolchain (edition 2024).
 
 ```bash
-git clone <repo-url> dspace
+git clone https://github.com/jackoconner45/Dspace.git dspace
 cd dspace
 cargo install --path .
 ```
@@ -102,9 +102,3 @@ cargo test
 cargo run --
 cargo run -- ~ high --depth 2
 ```
-
-Design decisions live in [`PLAN.md`](./PLAN.md).
-
-## License
-
-MIT
