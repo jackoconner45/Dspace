@@ -2,6 +2,7 @@
 
 use std::io::{self, IsTerminal};
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -9,7 +10,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 /// Spinner/progress for a directory walk. No-op when stderr is not a TTY.
 pub struct ScanProgress {
     bar: Option<ProgressBar>,
-    ticks: u64,
+    ticks: AtomicU64,
 }
 
 impl ScanProgress {
@@ -30,7 +31,7 @@ impl ScanProgress {
 
         Self {
             bar: Some(bar),
-            ticks: 0,
+            ticks: AtomicU64::new(0),
         }
     }
 
@@ -38,16 +39,16 @@ impl ScanProgress {
     pub fn disabled() -> Self {
         Self {
             bar: None,
-            ticks: 0,
+            ticks: AtomicU64::new(0),
         }
     }
 
     /// Record one visited filesystem entry (file, dir, or skipped attempt).
-    pub fn tick(&mut self, current: &Path) {
-        self.ticks = self.ticks.saturating_add(1);
+    pub fn tick(&self, current: &Path) {
+        let ticks = self.ticks.fetch_add(1, Ordering::Relaxed) + 1;
         if let Some(bar) = &self.bar {
-            if self.ticks % 32 == 0 || self.ticks < 8 {
-                bar.set_prefix(format!("{} entries", self.ticks));
+            if ticks % 32 == 0 || ticks < 8 {
+                bar.set_prefix(format!("{} entries", ticks));
                 let name = current
                     .file_name()
                     .and_then(|s| s.to_str())
@@ -71,6 +72,6 @@ impl ScanProgress {
 
     #[allow(dead_code)]
     pub fn entries_seen(&self) -> u64 {
-        self.ticks
+        self.ticks.load(Ordering::Relaxed)
     }
 }

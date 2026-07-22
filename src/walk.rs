@@ -9,6 +9,7 @@ use rayon::prelude::*;
 use crate::cli::Rank;
 use crate::format::{human_size, human_size_padded, use_color_stdout};
 use crate::progress::ScanProgress;
+use owo_colors::OwoColorize;
 
 /// A node in the display tree (sizes always include full recursive content).
 #[derive(Debug, Clone)]
@@ -63,28 +64,20 @@ fn scan_root(path: &Path, show_depth: u32, progress: &mut ScanProgress) -> Resul
     let mut skipped = 0u64;
 
     // Always compute top-level children if depth > 0.
-    let children: Option<Vec<Node>> = if show_depth > 0 {
-        Some(
-            entries
-                .par_iter()
-                .cloned()
-                .map(|entry| reflect_entry_dir(entry.path(), show_depth, &mut skipped, progress))
-                .collect(),
-        )
-    } else {
-        None
-    };
+    let mut child_paths = Vec::new();
+    for entry in entries {
+        let path = entry.path();
+        if show_depth > 0 {
+            let node = reflect_entry_dir(path.clone(), show_depth, &mut skipped, progress);
+            child_paths.push(node);
+        }
+        stat_size(&path);
+    }
+    let children = if show_depth > 0 { Some(child_paths) } else { None };
 
-    // Parallel size pass for all immediate children.
-    let mut sizes: Vec<u64> = entries
-        .par_iter()
-        .map(|entry| {
-            progress.tick(&entry.path());
-            stat_size(&entry.path())
-        })
-        .collect();
+    let root_size = stat_size(path);
 
-    let root_size = stat_size(path).saturating_add(sizes.iter().copied().sum());
+    let root_size = root_size;
 
     Ok(ScanResult {
         root_path: path.to_path_buf(),
@@ -206,7 +199,7 @@ fn scan_dir_parallel(
         .map(|entry| {
             progress.tick(&entry.path());
             let meta = fs::symlink_metadata(&entry.path()).ok();
-            meta.map(|m| (entry.clone(), m, entry.path().clone()))
+            meta.map(|m| (entry, m, entry.path().clone()))
         })
         .collect();
 

@@ -16,6 +16,8 @@ clap = { version = "4.4", features = ["derive"] }
 owo-colors = "4.0"
 rustix = { version = "0.38", features = ["fs", "std"] }
 rayon = "1.8"
+indicatif = "0.17"
+dirs = "5.0"
 
 [profile.release]
 lto = "thin"
